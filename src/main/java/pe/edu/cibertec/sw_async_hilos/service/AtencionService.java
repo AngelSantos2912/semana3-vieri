@@ -1,50 +1,42 @@
 package pe.edu.cibertec.sw_async_hilos.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pe.edu.cibertec.sw_async_hilos.remote.service.AsyncTaskService;
+import pe.edu.cibertec.sw_async_hilos.remote.service.TaskService;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
-@Slf4j //mensajes en consola -> log.
+@RequiredArgsConstructor
 @Service
 public class AtencionService {
 
-    private static final Logger log = LoggerFactory.getLogger(AtencionService.class);
+    private final AsyncTaskService asyncTaskService;
+    private final TaskService taskService;
 
-    @Async
-    public CompletableFuture<String> operacionPagoOnline() {
-        try{
-            log.info("Iniciando proceso de pago");
-            TimeUnit.SECONDS.sleep(4);
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return CompletableFuture.completedFuture("Pago exitoso");
+    public CompletableFuture<String> ejecutarTareasAsincronas() {
+        CompletableFuture<String> tarea1 = asyncTaskService.operacionPagoOnline();
+        CompletableFuture<String> tarea2 = asyncTaskService.operacionRegistroVentas();
+        CompletableFuture<String> tarea3 = asyncTaskService.operacionActualizacionCompras();
+
+        return CompletableFuture.allOf(tarea1, tarea2, tarea3).thenApply(result -> {
+            try {
+                String valorTarea1 = tarea1.join();
+                String valorTarea2 = tarea2.join();
+                String valorTarea3 = tarea3.join();
+                return "Resultado Final = " + valorTarea1 + " - " + valorTarea2 + " - " + valorTarea3;
+            }catch (Exception e) {
+                return "Error al combinar los datos";
+            }
+        }).exceptionally(ex -> "Error al ejecutar las tareas");
+
     }
 
-    @Async
-    public CompletableFuture<String> operacionRegistroVentas() {
-        try{
-            log.info("Iniciando registro de ventas");
-            TimeUnit.SECONDS.sleep(10);
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return CompletableFuture.completedFuture("Registro de venta exitoso");
-    }
+    public String tareas2() {
+        String tarea1 = taskService.metodo1();
+        String tarea2 = taskService.metodo2();
+        String tarea3 = taskService.metodo3();
 
-    @Async
-    public CompletableFuture<String> operacionActualizacionCompras() {
-        try {
-            log.info("Iniciando actualizacion de compras");
-            TimeUnit.SECONDS.sleep(7);
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return CompletableFuture.completedFuture("Compra actualizaco");
+        return "Resultado Final : " + tarea1 + " - " + tarea2 + " - " + tarea3;
     }
 }
